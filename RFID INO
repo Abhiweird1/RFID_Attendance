@@ -1,0 +1,113 @@
+ 
+#include <WiFiManager.h>  // Include the WiFiManager library
+#include <WiFi.h>
+#include <SPI.h>
+#include <Adafruit_PN532.h>
+
+#define LED_PIN     (2)
+#define PN532_SCK  (18)
+#define PN532_MOSI (23)
+#define PN532_SS   (22)
+#define PN532_MISO (19)
+Adafruit_PN532 nfc(PN532_SCK, PN532_MISO, PN532_MOSI, PN532_SS);
+
+
+#define MAX_TAGS 6 // Maximum number of allowed tags
+
+struct TagInfo {
+  String tagID;
+  int entryCount;
+  int exitCount;
+  bool inside;
+};
+
+bool isTagPresent = false;
+unsigned long tagDetectedTime = 0;
+const unsigned long detectionTimeThreshold = 30000; // 5 minutes in milliseconds
+
+TagInfo allowedTags[MAX_TAGS] = {
+  {"d11b1219", 0, 0, false}, // Replace "tag_id_1" with your actual allowed tag IDs
+  {"3144911d", 0, 0, false}, // Add more tag IDs as needed
+  {"c3e21113", 0, 0, false},
+  {"63490e13", 0, 0, false},
+  {"53741a13", 0, 0, false},
+};
+
+
+void setup(void) {
+  Serial.begin(115200);
+   Serial.println("Hello!");
+     pinMode(LED_PIN, OUTPUT);
+  // Create an instance of WiFiManager
+  WiFiManager wifiManager;
+  wifiManager.autoConnect("Classroom"); // Change "YourAPName" to the desired AP name
+  
+  // If connection successful, initialize Blynk
+  if (WiFi.status() == WL_CONNECTED) {
+    
+           nfc.begin();
+  
+  uint32_t versiondata = nfc.getFirmwareVersion();
+  if (!versiondata) {
+    Serial.print("Didn't find PN53x board");
+    while (1);
+  }
+  
+  nfc.SAMConfig();
+  Serial.println("Waiting for an RFID card...");
+    Serial.println("Connected to Wi-Fi");
+  } else {
+    Serial.println("Failed to connect to Wi-Fi");
+  }
+     pinMode(15,OUTPUT);
+}
+
+
+
+
+
+
+void loop(void) {
+
+  uint8_t success;
+  uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };
+  uint8_t uidLength;
+
+  success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength);
+
+  if (success) {
+    Serial.println("Found an RFID card!");
+
+    if (!isTagPresent) {
+      // Tag detected, turn on the switch
+      digitalWrite(LED_PIN, HIGH);
+      isTagPresent = true;
+      tagDetectedTime = millis(); // Record the time when the tag is detected
+      Serial.println("Tag detected");
+    }
+    // Check if the tag has been detected for more than 5 minutes
+    if (isTagPresent && (millis() - tagDetectedTime >= detectionTimeThreshold)) {
+      Serial.println("Present");
+      // Reset the state variables
+      isTagPresent = false;
+      tagDetectedTime = 0;
+      digitalWrite(LED_PIN, LOW); // Turn off the LED
+    }
+  } else {
+    if (isTagPresent) {
+      // Tag not detected, check if it's been absent for 30 seconds
+      unsigned long elapsedTime = millis() - tagDetectedTime;
+      if (elapsedTime >= 30000) {
+        Serial.println("Absent");
+        digitalWrite(LED_PIN, LOW); // Turn off the LED
+        isTagPresent = false;
+        tagDetectedTime = 0; // Reset the tag detection time
+      }
+    }
+  }
+
+  delay(1000);
+}
+
+
+
