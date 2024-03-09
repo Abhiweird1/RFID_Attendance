@@ -85,7 +85,7 @@ void loop(void) {
       tagDetectedTime = millis(); // Record the time when the tag is detected
       Serial.println("Tag detected");
     }
-    // Check if the tag has been detected for more than 5 minutes
+    // Check if the tag has been detected for more than 45 minutes
     if (isTagPresent && (millis() - tagDetectedTime >= detectionTimeThreshold)) {
       Serial.println("Present");
       // Reset the state variables
@@ -95,9 +95,9 @@ void loop(void) {
     }
   } else {
     if (isTagPresent) {
-      // Tag not detected, check if it's been absent for 30 seconds
+       
       unsigned long elapsedTime = millis() - tagDetectedTime;
-      if (elapsedTime >= 30000) {
+      if (elapsedTime >= 2700000) {
         Serial.println("Absent");
         digitalWrite(LED_PIN, LOW); // Turn off the LED
         isTagPresent = false;
