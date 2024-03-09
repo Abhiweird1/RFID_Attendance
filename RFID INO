@@ -23,7 +23,7 @@ struct TagInfo {
 
 bool isTagPresent = false;
 unsigned long tagDetectedTime = 0;
-const unsigned long detectionTimeThreshold = 30000; // 5 minutes in milliseconds
+const unsigned long detectionTimeThreshold = 2700000; // 45 minutes in milliseconds
 
 TagInfo allowedTags[MAX_TAGS] = {
   {"d11b1219", 0, 0, false}, // Replace "tag_id_1" with your actual allowed tag IDs
